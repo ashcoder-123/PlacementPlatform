@@ -1,0 +1,187 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  passwordHash   String
+  role           String    @default("student") // "student" or "admin"
+  branch         String?   @default("Computer Science")
+  graduationYear Int?      @default(2026)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  resumes        Resume[]
+  codingProfiles CodingProfile[]
+  generatedSets  GeneratedQuestionSet[]
+  submittedQuestions Question[] @relation("UserSubmittedQuestions")
+  questionVotes  QuestionVote[]
+  resources      Resource[] @relation("UserAddedResources")
+}
+
+model Topic {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  slug          String    @unique
+  category      String?   @default("Core CS")
+  parentTopicId String?
+  parentTopic   Topic?    @relation("TopicHierarchy", fields: [parentTopicId], references: [id])
+  childTopics   Topic[]   @relation("TopicHierarchy")
+
+  questions     Question[]
+  solvedProblems SolvedProblem[]
+  resources     Resource[]
+}
+
+model Company {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  sector        String
+  description   String?
+  rolesHiredFor String    // Stored as JSON string or comma-separated list
+  createdAt     DateTime  @default(now())
+
+  rounds        Round[]
+  generatedSets GeneratedQuestionSet[]
+}
+
+model Round {
+  id          String     @id @default(uuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type        String     // "online_test", "technical", "hr"
+  order       Int        @default(1)
+  description String?
+
+  questions   Question[]
+}
+
+model Question {
+  id           String         @id @default(uuid())
+  roundId      String
+  round        Round          @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  topicId      String
+  topic        Topic          @relation(fields: [topicId], references: [id])
+  text         String
+  difficulty   String         @default("medium") // "easy", "medium", "hard"
+  source       String?        @default("Student Interview Experience")
+  verified     Boolean        @default(false)
+  upvoteCount  Int            @default(0)
+  matchCount   Int            @default(0)
+  submittedById String?
+  submittedBy  User?          @relation("UserSubmittedQuestions", fields: [submittedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+
+  votes        QuestionVote[]
+}
+
+model QuestionVote {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  kind       String   // "upvote" or "matched"
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+}
+
+model Resume {
+  id         String          @id @default(uuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  targetRole String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  versions   ResumeVersion[]
+}
+
+model ResumeVersion {
+  id            String         @id @default(uuid())
+  resumeId      String
+  resume        Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  versionNumber Int            @default(1)
+  fileUrl       String?
+  extractedText String
+  createdAt     DateTime       @default(now())
+
+  reviews       ResumeReview[]
+}
+
+model ResumeReview {
+  id                 String        @id @default(uuid())
+  resumeVersionId    String
+  resumeVersion      ResumeVersion @relation(fields: [resumeVersionId], references: [id], onDelete: Cascade)
+  jobDescriptionText String?
+  overallScore       Int
+  keywordOverlapScore Int          @default(0)
+  sectionScores      String        // Stored as JSON string
+  suggestions        String        // Stored as JSON string
+  missingKeywords    String        // Stored as JSON string
+  summary            String?
+  modelUsed          String        @default("HuggingFace-Instruction-Tuned")
+  createdAt          DateTime      @default(now())
+}
+
+model CodingProfile {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     String          // "codeforces", "leetcode", "gfg"
+  handle       String
+  lastSyncedAt DateTime?
+
+  solvedProblems SolvedProblem[]
+
+  @@unique([userId, platform])
+}
+
+model SolvedProblem {
+  id              String        @id @default(uuid())
+  codingProfileId String
+  codingProfile   CodingProfile @relation(fields: [codingProfileId], references: [id], onDelete: Cascade)
+  externalId      String
+  title           String
+  difficulty      String        @default("medium")
+  link            String?
+  solvedAt        DateTime      @default(now())
+
+  topics          Topic[]
+
+  @@unique([codingProfileId, externalId])
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  url         String
+  type        String   // "video", "article", "course", "sheet"
+  difficulty  String   @default("medium") // "beginner", "intermediate", "advanced"
+  verified    Boolean  @default(false)    // false = pending admin approval
+  addedById   String?
+  addedBy     User?    @relation("UserAddedResources", fields: [addedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  topics      Topic[]
+}
+
+model GeneratedQuestionSet {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  targetRole String
+  questions  String   // JSON array of GeneratedQuestionItem
+  createdAt  DateTime @default(now())
+}

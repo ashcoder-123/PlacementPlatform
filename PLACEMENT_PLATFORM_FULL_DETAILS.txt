@@ -1,0 +1,555 @@
+================================================================================
+          SMART PLACEMENT PREPARATION PLATFORM - MASTER TECHNICAL GUIDE
+                    Full Implementation Details, Formulas & Viva Reference
+================================================================================
+Generated for: Campus Placement Platform Project Demo & Professor Viva
+Location: e:/Projects/PlacementPlatform/PLACEMENT_PLATFORM_FULL_DETAILS.txt
+Date: 2026-10-14
+================================================================================
+
+TABLE OF CONTENTS:
+--------------------------------------------------------------------------------
+ 1. Executive Summary & Problem Statement
+ 2. System Architecture & Complete Tech Stack
+ 3. Database Schema & Relational Design (PostgreSQL + Prisma)
+ 4. Feature 1: Company Interview Tracker & Multi-Round Hierarchy
+ 5. Feature 2: Competitive Coding Sync & Canonical Tag Normalization
+ 6. Feature 3: Weak-Topic Gap Analysis Formula (Mathematical Engine)
+ 7. Feature 4: Resume Versioning, PII Redaction & ATS Review Engine
+ 8. Feature 5: Grounded AI Question Generator (RAG Pipeline)
+ 9. Feature 6: Curated Resource Library & Targeted Recommendations
+10. Complete REST API Reference (Endpoints & Payloads)
+11. Defensive Engineering & Resiliency Mechanisms
+12. Top 15 Professor Viva Questions & High-Impact Answers
+13. Step-by-Step Live Demo Presentation Script
+14. Codebase Navigation Cheat Sheet (Exact File Pointers)
+
+
+================================================================================
+1. EXECUTIVE SUMMARY & PROBLEM STATEMENT
+================================================================================
+Problem Statement:
+Most undergraduate students prepare for technical campus placements using generic
+problem lists (e.g. "Blind 75", "Striver SDE Sheet") without aligning their
+efforts with actual hiring trends of specific visiting companies. Furthermore,
+competitive coding platforms (LeetCode, Codeforces) operate in silos from company
+interview logs and student resumes.
+
+Our Solution:
+The Smart Placement Preparation Platform is a strategic correlation engine.
+It connects four critical facets of placement preparation:
+1. Real company interview logs across structured evaluation rounds.
+2. Verified competitive programming activity across multiple external judges.
+3. A mathematical Gap Analysis formula that highlights company-specific weak spots.
+4. ATS resume evaluation with automated PII masking and grounded AI mock questions.
+
+
+================================================================================
+2. SYSTEM ARCHITECTURE & COMPLETE TECH STACK
+================================================================================
+Architecture Pattern: Client-Server Architecture with Decoupled Shared Library.
+
+1. FRONTEND:
+   - Framework: Next.js 14 (App Router architecture with React Server & Client Components)
+   - Language: TypeScript
+   - Styling: Tailwind CSS with Glassmorphism, tailored HSL color tokens, dark mode
+   - Icons: Lucide-React
+   - HTTP Client: Axios with JWT request interceptors
+
+2. BACKEND:
+   - Runtime: Node.js (v18+)
+   - Framework: Express.js
+   - Language: TypeScript
+   - Database ORM: Prisma ORM (Type-safe client generation)
+   - PDF Processing: `pdf-parse` (In-memory buffer extraction)
+   - Security / Auth: JSON Web Tokens (`jsonwebtoken`), `bcryptjs` (salt rounds: 10)
+
+3. DATABASE:
+   - Relational Database: PostgreSQL
+   - Connection Pooling: Managed via Prisma Client singleton
+
+4. SHARED LIBRARY (`@placement/shared`):
+   - Monorepo package containing shared TypeScript interfaces and Zod validation
+     schemas used simultaneously by client and server for end-to-end type safety.
+
+5. EXTERNAL INTEGRATIONS:
+   - Codeforces REST API (`https://codeforces.com/api/user.status`)
+   - LeetCode Public GraphQL Endpoint (`https://leetcode.com/graphql`)
+   - Hugging Face Serverless Inference API (`mistralai/Mistral-7B-Instruct-v0.2`)
+   - Offline Heuristic Engine (Dual-engine architecture for 100% uptime)
+
+
+================================================================================
+3. DATABASE SCHEMA & RELATIONAL DESIGN (POSTGRESQL + PRISMA)
+================================================================================
+File Reference: server/prisma/schema.prisma
+
+Core Entities & Relationships:
+
+1. User
+   - Fields: id (UUID), name, email (unique), passwordHash, role ('student'|'admin'),
+             branch, graduationYear, createdAt, updatedAt.
+   - Relations:
+     - 1-to-many with Resume
+     - 1-to-many with CodingProfile
+     - 1-to-many with GeneratedQuestionSet
+     - 1-to-many with Question (submittedQuestions)
+     - 1-to-many with QuestionVote
+     - 1-to-many with Resource (addedResources)
+
+2. Topic (Canonical Taxonomy)
+   - 15 Canonical Topics: arrays-hashing, two-pointers, sliding-window,
+     linked-lists, stacks-queues, binary-search, trees, heaps-priority-queues,
+     recursion-backtracking, graphs, dynamic-programming, bit-manipulation,
+     mathematics, system-design, operating-systems, database-management.
+   - Self-relation: parentTopic / childTopics hierarchy.
+   - Relations: Many-to-many with SolvedProblem, 1-to-many with Question.
+
+3. Company & Round
+   - Company: id, name (unique), sector, description, rolesHiredFor.
+   - Round: id, companyId (FK, onDelete: Cascade), type ('online_test' | 'technical' | 'hr'),
+     order (Int), description.
+   - Hierarchy: Company 1 ---> N Round 1 ---> N Question.
+
+4. Question & QuestionVote
+   - Question: id, roundId (FK), topicId (FK), text, difficulty ('easy'|'medium'|'hard'),
+     source, verified (Boolean), upvoteCount, matchCount, submittedById.
+   - QuestionVote: id, userId, questionId, kind ('upvote' | 'matched').
+   - Constraint: @@unique([userId, questionId]) prevents multiple votes per user.
+
+5. Resume, ResumeVersion, ResumeReview
+   - Resume: id, userId, title, targetRole.
+   - ResumeVersion: id, resumeId (FK, onDelete: Cascade), versionNumber, fileUrl,
+     extractedText.
+   - ResumeReview: id, resumeVersionId (FK), overallScore, keywordOverlapScore,
+     sectionScores (JSON), suggestions (JSON), missingKeywords (JSON), summary, modelUsed.
+
+6. CodingProfile & SolvedProblem
+   - CodingProfile: id, userId, platform ('codeforces'|'leetcode'|'gfg'), handle, lastSyncedAt.
+   - Constraint: @@unique([userId, platform]).
+   - SolvedProblem: id, codingProfileId, externalId, title, difficulty, link, solvedAt.
+   - Constraint: @@unique([codingProfileId, externalId]).
+   - Relation: Many-to-many with Topic.
+
+7. Resource
+   - Fields: id, title, url, type ('video'|'article'|'course'|'sheet'), difficulty,
+     verified (Boolean), addedById.
+   - Admin moderation: Students submit with verified=false; Admins auto-verify.
+
+
+================================================================================
+4. FEATURE 1: COMPANY INTERVIEW TRACKER & MULTI-ROUND HIERARCHY
+================================================================================
+Code Files:
+- Backend: server/src/controllers/companyController.ts
+- Frontend: client/src/app/companies/page.tsx
+
+How it works:
+1. Companies are organized into strict evaluation rounds:
+   - Round 1: Online Assessment / Test (Aptitude & Coding)
+   - Round 2: Technical Interview 1 (DSA & Core CS)
+   - Round 3: Technical Interview 2 / System Design
+   - Round 4: HR / Managerial Round
+2. Crowdsourcing Workflow:
+   - Any student can log a question from their interview drive.
+   - Questions submitted by admins are instantly published (`verified = true`).
+   - Questions submitted by students are flagged as `verified = false` until reviewed.
+3. Peer Voting Mechanism (`CompanyController.voteQuestion`):
+   - Two distinct vote types:
+     * "Upvote": Student finds the question high quality / clear.
+     * "Matched" ("I got this!"): Student faced this exact question in their campus drive.
+   - Atomic toggle logic:
+     * If user clicks the active vote button again -> Vote is deleted and counter decremented.
+     * If user switches from upvote to matched -> Old counter decrements, new increments.
+     * If user votes first time -> Vote record created, counter increments.
+
+
+================================================================================
+5. FEATURE 2: COMPETITIVE CODING SYNC & TAG NORMALIZATION
+================================================================================
+Code Files:
+- Sync Engine: server/src/services/judgeClient.ts
+- Normalization Map: server/src/services/topicMapping.ts
+- Controller: server/src/controllers/codingController.ts
+- Frontend: client/src/app/coding/page.tsx
+
+How it works:
+1. Codeforces Ingestion (`JudgeClient.syncCodeforces`):
+   - Calls official API: `https://codeforces.com/api/user.status?handle={handle}&from=1&count=100`
+   - Filters submissions where `sub.verdict === "OK"`.
+   - Generates unique external ID: `CF-{contestId}{index}`.
+   - Derives difficulty from CF problem rating:
+     * rating < 1200  => "easy"
+     * rating >= 1600 => "hard"
+     * other          => "medium"
+
+2. LeetCode Ingestion (`JudgeClient.syncLeetCode`):
+   - Queries LeetCode GraphQL public endpoint with payload:
+     `matchedUser(username) { submitStats { ... } }` and
+     `recentAcSubmissionList(username, limit: 50) { id, title, titleSlug, timestamp }`
+   - Chunks problem queries in parallel batches of 6 items (`chunkSize = 6`) to query
+     `question(titleSlug) { difficulty, topicTags { slug } }`.
+   - Generates unique external ID: `LC-{titleSlug}`.
+
+3. Canonical Tag Normalization (`topicMapping.ts`):
+   Different platforms use wildly different strings for the same concept.
+   The engine maps 40+ raw external tags to 15 canonical database topic slugs:
+     * "dp", "dynamic programming", "memoization"      ==> "dynamic-programming"
+     * "depth-first search", "bfs", "dfs and similar"  ==> "graphs"
+     * "hash table", "matrix", "implementation"        ==> "arrays-hashing"
+     * "sliding-window", "two-pointers"                ==> "two-pointers"
+     * "binary-tree", "trie", "binary-search-tree"     ==> "trees"
+     * "heap (priority queue)", "priority-queue"       ==> "heaps-priority-queues"
+     * "dbms", "database"                              ==> "database-management"
+     * "concurrency", "operating-system", "os"         ==> "operating-systems"
+
+
+================================================================================
+6. FEATURE 3: WEAK-TOPIC GAP ANALYSIS FORMULA (THE CORE ENGINE)
+================================================================================
+Code File: server/src/services/judgeClient.ts (Lines 215 - 292)
+Method: JudgeClient.calculateWeakTopics(userId, companyId)
+
+Mathematical Formula:
+For each canonical topic (t) and selected company (C):
+
+Step 1: Calculate Company Appearance Weight (CompanyWeight)
+------------------------------------------------------------
+CompanyWeight = ( Questions_in_Company_on_Topic_t / Total_Questions_in_Company ) * 100
+
+* Meaning: Percentage of the company's interview rounds testing this specific topic.
+
+Step 2: Calculate Student Competency Factor (StudentCompetency)
+---------------------------------------------------------------
+StudentCompetency = MIN( ( Problems_Solved_by_Student_on_Topic_t / 5 ) * 100,  100 )
+
+* Meaning: Normalizes student practice. 5 solved problems in a topic represents
+  the baseline benchmark (100% competency) for campus placement rounds.
+
+Step 3: Calculate Gap Score (GapScore)
+--------------------------------------
+GapScore = MAX( 0,  ROUND( (CompanyWeight * 1.5) - (StudentCompetency * 0.8) ) )
+
+* The Rationale:
+  - 1.5x Multiplier: Amplifies topics heavily favored by the company.
+  - 0.8x Multiplier: Grants credit for the student's verified practice.
+  - Topics with high company frequency and low student practice produce large
+    positive Gap Scores.
+  - If student competency exceeds company requirements, score clamps at 0 ("Balanced").
+
+Concrete Numerical Example:
+Company: Google (10 verified questions logged)
+Topic: Dynamic Programming (4 questions asked = 40% of all Google questions)
+
+Scenario A (Under-prepared Student):
+- Student has solved 1 DP problem on LeetCode.
+- CompanyWeight = (4 / 10) * 100 = 40%
+- StudentCompetency = MIN((1 / 5) * 100, 100) = 20%
+- GapScore = (40 * 1.5) - (20 * 0.8) = 60 - 16 = +44 (CRITICAL GAP)
+-> Result: Flagged in Red at Rank #1 on Dashboard.
+
+Scenario B (Prepared Student):
+- Student solves 4 more DP problems (Total = 5).
+- CompanyWeight = 40%
+- StudentCompetency = MIN((5 / 5) * 100, 100) = 100%
+- GapScore = (40 * 1.5) - (100 * 0.8) = 60 - 80 = -20 => Clamped to 0.
+-> Result: Marked as "Adequate coverage / Balanced".
+
+
+================================================================================
+7. FEATURE 4: RESUME VERSIONING, PII REDACTION & ATS REVIEW ENGINE
+================================================================================
+Code Files:
+- Backend Engine: server/src/services/aiService.ts
+- Controller: server/src/controllers/resumeController.ts
+- Frontend Pages: client/src/app/resumes/page.tsx, client/src/app/ai-lab/page.tsx
+
+How it works:
+1. Versioning:
+   - A single student can maintain multiple resume profiles (e.g. "SDE Role" vs "Data Analyst").
+   - Every upload creates a new sequential `ResumeVersion` (v1, v2, v3), allowing side-by-side
+     comparison of improvement over time.
+2. Text Extraction:
+   - Uploaded PDF binary is parsed in memory using `pdf-parse`.
+   - "Paste Text" tab provides resilient fallback for image-scanned PDFs.
+3. Privacy & PII Redaction (`AIService.sanitizeText`):
+   - Masks sensitive personal data before any AI or external transmission:
+     * Email regex: `/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g` -> `[REDACTED_EMAIL]`
+     * Phone regex: `/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g` -> `[REDACTED_PHONE]`
+4. Algorithmic Keyword Overlap Formula (`AIService.computeKeywordOverlap`):
+   - Filters 40+ English stop words (prepositions, auxiliary verbs, generic filler words).
+   - Extracts unique alphanumeric keywords from Job Description (JD) and Resume (R).
+   - Mathematical formula:
+     OverlapScore = MIN( 100,  ROUND( ( |R_keywords ∩ JD_keywords| / |JD_keywords| ) * 100 ) )
+   - Pinpoints matched keywords (up to 15) and explicitly lists missing keywords.
+5. Rubric Scoring & Google XYZ Bullet Rewriting:
+   - Evaluates:
+     * Impact & Quantification (Metrics, %, Latency reductions)
+     * Technical Skills Alignment
+     * Project Architecture & Ownership
+     * Formatting & Structure
+   - Suggests bullet improvements using Google's XYZ Formula:
+     "Accomplished [X], measured by [Y], by doing [Z]"
+   - Dual-Engine Fallback: If Hugging Face is unreachable, local heuristic engine
+     analyzes regex metric density and keyword overlap, generating complete JSON rubric.
+
+
+================================================================================
+8. FEATURE 5: GROUNDED AI QUESTION GENERATOR (RAG PIPELINE)
+================================================================================
+Code Files:
+- Backend Engine: server/src/services/aiService.ts (Lines 227 - 284)
+- Controller: server/src/controllers/aiController.ts (Lines 76 - 138)
+- Frontend: client/src/app/ai-lab/page.tsx
+
+How it works:
+Unlike generic ChatGPT prompts that output random questions, this generator uses
+grounded context injection (Retrieval-Augmented Generation pattern):
+1. Ingestion:
+   - Retrieves up to 15 verified historical questions logged for that specific company.
+   - Computes the student's top identified weak topics via `JudgeClient.calculateWeakTopics`.
+2. Contextual Prompt Assembly:
+   - Injects the company's real question difficulty distribution and round types.
+   - Specifically asks the LLM to target the candidate's highest gap score topics.
+3. Structured Output:
+   - Generates questions with:
+     * Round Type (`online_test`, `technical`, `hr`)
+     * Topic Name
+     * Full Question Formulation
+     * Expected Technical Answer Approach
+     * Explicit Rationale linking company history to candidate's weak spot.
+4. Persistence:
+   - Saves generated set into PostgreSQL `GeneratedQuestionSet` table for later practice.
+
+
+================================================================================
+9. FEATURE 6: CURATED RESOURCE LIBRARY & TARGETED RECOMMENDATIONS
+================================================================================
+Code Files:
+- Backend Controller: server/src/controllers/resourceController.ts
+- Frontend Page: client/src/app/resources/page.tsx
+
+How it works:
+1. Resource Classification:
+   - Resources are categorized by Type (`video`, `article`, `course`, `sheet`)
+     and Difficulty (`beginner`, `intermediate`, `advanced`).
+2. Role-Based Moderation:
+   - Non-admin students only see approved resources (`verified = true`).
+   - Admins see both pending and approved resources, with One-Click Verify/Reject toggles.
+3. Personalized Resource Matching (`ResourceController.getRecommendations`):
+   - Queries `JudgeClient.calculateWeakTopics(userId, companyId)` to find top 3 weak topic IDs.
+   - Runs database query:
+     `prisma.resource.findMany({ where: { verified: true, topics: { some: { id: { in: topThreeTopicIds } } } } })`
+   - Student dashboard automatically displays study materials directly addressing their gap!
+
+
+================================================================================
+10. COMPLETE REST API REFERENCE
+================================================================================
+
+Authentication:
+- POST /api/auth/register    - Body: { name, email, password, branch, graduationYear }
+- POST /api/auth/login       - Body: { email, password } -> Returns JWT token & user profile
+- GET  /api/auth/me          - Headers: Bearer <token> -> Returns authenticated user profile
+
+Companies & Questions:
+- GET  /api/companies        - Returns all companies with evaluation rounds & question counts
+- GET  /api/companies/:id    - Returns single company details, rounds, and verified questions
+- POST /api/companies        - Admin-only: Create new company with default/custom rounds
+- GET  /api/questions        - Query params: companyId, roundType, topicId, difficulty, search
+- POST /api/questions        - Authenticated: Submit student interview experience
+- POST /api/questions/:id/vote - Body: { kind: 'upvote' | 'matched' } -> Toggles user vote
+- PATCH /api/questions/:id/verify - Admin-only: Verify or unverify question
+
+Coding Profiles & Judge Sync:
+- GET  /api/coding/profiles  - Returns student's linked profiles & problem counts
+- POST /api/coding/profiles/sync - Body: { platform: 'leetcode'|'codeforces', handle: '...' }
+- POST /api/coding/problems/manual - Body: { title, difficulty, link, topicIds, platform }
+- GET  /api/coding/weak-topics - Query: ?companyId=... -> Computes ranked Gap Scores
+
+Resumes & AI Review:
+- GET  /api/resumes          - Returns all student resumes with latest versions & reviews
+- POST /api/resumes          - Body: { title, targetRole } -> Create resume profile
+- POST /api/resumes/:id/versions - Multipart form: PDF file or pastedText
+- DELETE /api/resumes/versions/:versionId - Delete specific version
+- POST /api/ai/review-resume/:resumeVersionId - Body: { jobDescription } -> Computes ATS score
+- POST /api/ai/generate-questions - Body: { companyId, targetRole, includeWeakTopics, count }
+
+Resources:
+- GET  /api/resources        - Query: type, difficulty, topicId, search (Filtered by verification)
+- GET  /api/resources/recommendations - Query: ?companyId=... -> Matches top 3 weak topics
+- POST /api/resources        - Add resource (Admin = auto-verified, Student = pending)
+- PATCH /api/resources/:id/verify - Admin-only: Approve resource
+
+
+================================================================================
+11. DEFENSIVE ENGINEERING & RESILIENCY MECHANISMS
+================================================================================
+1. Third-Party Rate Limit & Timeout Protection:
+   - LeetCode GraphQL calls are batched in parallel chunks of 6 with 6-second timeouts.
+   - Codeforces API is executed with strict 10-second timeout limits.
+   - Failures do not crash the server; warnings are logged and graceful fallback data is returned.
+
+2. Zero-Downtime AI Engine (Dual-Engine Strategy):
+   - Primary: Hugging Face Serverless API (`Mistral-7B-Instruct-v0.2`).
+   - Fallback: Deterministic heuristic engine that performs regex keyword scanning,
+     metric density analysis, and keyword overlap computation locally.
+   - If internet is lost or HF token expires, the application continues to function 100%.
+
+3. PII & Privacy Defense:
+   - Automated regex redaction of email addresses and phone numbers prevents
+     unintentional leak of personal identification data to third-party model providers.
+
+4. Database Anti-Spam:
+   - Unique compound keys `@@unique([userId, questionId])` in PostgreSQL prevent
+     duplicate voting or bot inflation.
+   - Cascade deletions prevent orphan records when deleting companies or resumes.
+
+
+================================================================================
+12. TOP 15 PROFESSOR VIVA QUESTIONS & HIGH-IMPACT ANSWERS
+================================================================================
+
+Q1: What is the primary novel contribution of your project?
+A1: Existing platforms are generic problem repositories. Our novel contribution is a
+    bi-directional correlation engine: we correlate actual company round frequencies
+    with a student's competitive programming history through a mathematical Gap Score
+    formula, pinpointing exactly where they are unprepared for a specific company.
+
+Q2: How does the Gap Score formula work mathematically?
+A2: For any company and topic, CompanyWeight = (CompanyQuestionsOnTopic / TotalCompanyQuestions) * 100.
+    StudentCompetency = MIN((ProblemsSolved / 5) * 100, 100).
+    GapScore = MAX(0, ROUND(CompanyWeight * 1.5 - StudentCompetency * 0.8)).
+    It amplifies company requirements by 1.5x and subtracts 80% of verified student competency.
+
+Q3: Why did you pick 5 problems as the student competency divisor?
+A3: In undergraduate placement benchmarking, solving 5 distinct problems in a canonical
+    topic (e.g. Graphs or DP) indicates familiarity with core patterns (BFS, DFS, Memoization,
+    Tabulation). It serves as an achievable threshold to claim basic competency.
+
+Q4: How do you normalize tags across different competitive coding platforms?
+A4: Codeforces uses tags like 'dp' and 'graph matchings', while LeetCode uses 'sliding-window'
+    and 'hash-table'. We built a canonical mapping service (`topicMapping.ts`) that maps 40+
+    external tags into 15 standardized platform topics stored in PostgreSQL.
+
+Q5: What is the difference between an 'Upvote' and a 'Matched' vote?
+A5: An upvote indicates quality or clarity of the question. A 'Matched' vote signifies
+    ground-truth recurrence: "I also got this exact question in my interview drive." This helps
+    students identify high-probability questions.
+
+Q6: How do you extract text from uploaded resumes?
+A6: We accept PDF uploads and process them in-memory using `pdf-parse`. For scanned documents
+    where OCR would be required, we provide a seamless 'Paste Text' fallback tab.
+
+Q7: How do you handle candidate data privacy with AI models?
+A7: Before any resume text is sent to our AI service, it passes through `AIService.sanitizeText()`.
+    Regular expressions replace all email addresses and phone numbers with tokens like
+    `[REDACTED_EMAIL]` and `[REDACTED_PHONE]`.
+
+Q8: What is the ATS Keyword Overlap algorithm?
+A8: We strip common English stop words, extract unique keyword sets from the Job Description (JD)
+    and Resume (R), and calculate the intersection: (|R ∩ JD| / |JD|) * 100. It pinpoints missing
+    keywords required by the employer.
+
+Q9: What is Google's XYZ formula mentioned in your resume review?
+A9: It is the standard recruitment rubric: "Accomplished [X], measured by [Y], by doing [Z]".
+    Our AI review identifies weak bullet points and rewrites them using this formula to include
+    measurable metrics and technologies.
+
+Q10: Why did you use PostgreSQL instead of MongoDB?
+A10: Our data is inherently relational: Companies contain Rounds, Rounds contain Questions,
+     and Users cast unique Votes on Questions. PostgreSQL with Prisma enforces foreign-key
+     constraints, atomic transactions, and unique compound constraints (`userId_questionId`)
+     that prevent data anomalies.
+
+Q11: What happens if Hugging Face is down or rate-limited during the demo?
+A11: We engineered a dual-engine architecture. If the external Hugging Face API call fails
+     or times out, our system automatically falls back to an internal heuristic engine that
+     calculates metric density and ATS overlap locally, ensuring zero downtime.
+
+Q12: How do you prevent students from flooding the platform with fake questions?
+A12: We implemented role-based moderation. Questions submitted by students are created with
+     `verified: false`. Only admins can mark them verified, and students can upvote or flag them.
+
+Q13: Why did you separate the frontend and backend into Next.js and Express?
+A13: Separation of concerns: Next.js provides server-side rendering and client-side routing,
+     while Express acts as an independent REST API microservice that can be scaled, tested,
+     or integrated with mobile clients independently.
+
+Q14: How are passwords and authentication secured?
+A14: Passwords are encrypted using `bcryptjs` with 10 salt rounds. Authentication uses stateless
+     JSON Web Tokens (JWT) signed with HMAC-SHA256 and sent via HTTP Authorization Bearer headers.
+
+Q15: How are recommended study resources chosen for a student?
+A15: The system calls `JudgeClient.calculateWeakTopics(userId, companyId)` to identify the
+     student's top 3 weak topic IDs. It then queries the database for verified resources
+     tagged with those exact topic IDs.
+
+
+================================================================================
+13. STEP-BY-STEP LIVE DEMO PRESENTATION SCRIPT
+================================================================================
+Follow this sequence during your 5-10 minute presentation:
+
+Step 1: Dashboard Overview (`/`)
+- Open the dashboard: Show the 4 stats counters (Companies, Questions, Profiles, Resumes).
+- Switch the target company dropdown from "Google" to "TCS" or "Amazon".
+- Show the Weak-Topic Gap Radar dynamically recalculate! Explain: "Notice how Google
+  flags Dynamic Programming with a +44 Gap, while TCS prioritizes Arrays & Strings."
+
+Step 2: Coding Profile Sync (`/coding`)
+- Demonstrate the Codeforces/LeetCode sync.
+- Explain: "Our platform queries LeetCode GraphQL and Codeforces API in the background
+  and normalizes heterogeneous tags into our 15 canonical topics."
+
+Step 3: Company Question Tracker (`/companies`)
+- Click into a company (e.g. Amazon or Google).
+- Show the evaluation rounds: "Online Assessment -> Technical Interview 1 -> HR".
+- Demonstrate the Upvote and 'Matched' counter toggle to show anti-duplicate voting.
+
+Step 4: AI Lab & Resume Audit (`/ai-lab`)
+- Select a resume version, paste a sample Job Description, and click "Audit Resume".
+- Show the ATS Keyword Overlap score, missing keywords, and the Google XYZ rewrite suggestion.
+- Switch to "Generate Bespoke Questions", check "Ground in my weak topics", and generate questions.
+- Show professors that the generated questions specifically target the candidate's gap topics!
+
+Step 5: Targeted Resources (`/resources`)
+- Open Resources page: Show how the top section automatically filters materials for
+  the student's top 3 weak areas identified in Step 1.
+
+
+================================================================================
+14. CODEBASE NAVIGATION CHEAT SHEET (EXACT FILE POINTERS)
+================================================================================
+When professors ask: "Show me where this happens in the code":
+
+1. The Gap Score Formula:
+   server/src/services/judgeClient.ts  (Lines 256 - 268)
+
+2. Canonical Tag Normalization Map:
+   server/src/services/topicMapping.ts  (Lines 3 - 85)
+
+3. LeetCode GraphQL Chunked Sync:
+   server/src/services/judgeClient.ts  (Lines 83 - 207)
+
+4. PII Redaction Regex & Keyword Overlap:
+   server/src/services/aiService.ts  (Lines 18 - 75)
+
+5. AI Resume Review & Prompt Rubric:
+   server/src/services/aiService.ts  (Lines 115 - 222)
+
+6. Grounded AI Question Generator:
+   server/src/services/aiService.ts  (Lines 227 - 284)
+
+7. Database Schema & Relations:
+   server/prisma/schema.prisma
+
+8. Voting & Anti-Spam Logic:
+   server/src/controllers/companyController.ts  (Lines 192 - 259)
+
+9. Interactive Dashboard UI:
+   client/src/app/page.tsx
+
+================================================================================
+                          END OF MASTER TECHNICAL GUIDE
+================================================================================

@@ -10,12 +10,10 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  Layers,
   CheckCircle2,
-  AlertCircle,
-  FileCode,
   Calendar,
-  ExternalLink,
+  X,
+  ArrowRight,
 } from "lucide-react";
 
 export default function ResumesPage() {
@@ -107,14 +105,14 @@ export default function ResumesPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setUploadSuccess("New version stored and parsed successfully!");
+      setUploadSuccess("Version stored and parsed successfully!");
       setSelectedFile(null);
       setPastedText("");
       loadResumes();
     } catch (err: any) {
       setUploadError(
         err.response?.data?.error ||
-          "Failed to upload or parse resume version. For scanned PDFs, use the Paste Text tab."
+          "Failed to upload or parse resume version."
       );
     } finally {
       setUploading(false);
@@ -133,17 +131,17 @@ export default function ResumesPage() {
 
   if (!user) {
     return (
-      <div className="p-12 text-center glass-panel rounded-2xl max-w-lg mx-auto">
-        <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white">Authentication Required</h2>
-        <p className="text-sm text-slate-400 mt-2 mb-6">
-          Please log in to manage your resume versions and run automated rubric reviews.
+      <div className="p-12 text-center rounded-2xl bg-zinc-900/40 border border-white/[0.06] max-w-md mx-auto my-12">
+        <FileText className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+        <h2 className="text-base font-bold text-white">Sign In Required</h2>
+        <p className="text-xs text-zinc-400 mt-1 mb-5">
+          Sign in to manage role-specific resumes and execute AI reviews.
         </p>
         <Link
           href="/login"
-          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all"
+          className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs transition-colors"
         >
-          Sign In Now
+          Sign In
         </Link>
       </div>
     );
@@ -152,40 +150,37 @@ export default function ResumesPage() {
   const activeResume = resumes.find((r) => r.id === selectedResumeId);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.05]">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
-              <FileText className="w-5 h-5" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">Resume Version Management</h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Maintain role-tailored resume versions, extract text automatically via pdf-parse, and send to the AI Reviewer.
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Resume Hub
+          </h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Role-tailored versions with automatic text extraction and AI rubric scoring
           </p>
         </div>
 
         <button
           onClick={() => setIsProfileModalOpen(true)}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all"
+          className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs shadow-sm shadow-amber-500/20 transition-colors flex items-center gap-1.5"
         >
-          <Plus className="w-4 h-4" />
-          New Target Role Profile
+          <Plus className="w-3.5 h-3.5" />
+          New Role Profile
         </button>
       </div>
 
       {resumes.length === 0 ? (
-        <div className="p-12 text-center glass-panel rounded-2xl">
-          <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white">No Resume Profiles Found</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto mb-4">
-            Create your first target role profile (e.g. SDE 1, Frontend Engineer, Data Analyst) to start version tracking.
+        <div className="p-10 text-center rounded-xl bg-zinc-900/20 border border-dashed border-white/[0.06]">
+          <FileText className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+          <h3 className="text-sm font-semibold text-white">No Profiles Configured</h3>
+          <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto mb-4">
+            Add a target role profile (e.g., SDE 1, Frontend) to store version iterations.
           </p>
           <button
             onClick={() => setIsProfileModalOpen(true)}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+            className="px-3.5 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-semibold"
           >
             Create Profile
           </button>
@@ -194,62 +189,62 @@ export default function ResumesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Target Profiles */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Target Role Profiles
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 px-1">
+              Target Profiles
             </h3>
             <div className="space-y-2">
               {resumes.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => setSelectedResumeId(r.id)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                     selectedResumeId === r.id
-                      ? "bg-indigo-600/20 border-indigo-500/50 shadow-md text-white"
-                      : "glass-panel border-slate-800 text-slate-300 hover:border-slate-700"
+                      ? "bg-amber-400/10 border-amber-400/30 text-white font-medium"
+                      : "bg-zinc-900/30 border-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:border-white/[0.08]"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-sm truncate">{r.title}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="font-semibold text-xs truncate text-white">{r.title}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
                       v{r.versions.length}
                     </span>
                   </div>
-                  <p className="text-xs text-indigo-300 font-medium">{r.targetRole}</p>
+                  <p className="text-[11px] text-amber-400/80">{r.targetRole}</p>
                 </button>
               ))}
             </div>
 
             {/* Upload New Version Card */}
             {activeResume && (
-              <div className="glass-panel p-5 rounded-2xl border border-slate-800 mt-6">
-                <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-indigo-400" />
-                  Add New Version
+              <div className="p-4 rounded-xl bg-zinc-900/30 border border-white/[0.05] mt-6">
+                <h4 className="text-xs font-semibold text-white mb-1 flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-amber-400" />
+                  Add Version
                 </h4>
-                <p className="text-[11px] text-slate-400 mb-4">
-                  Target: <strong className="text-white">{activeResume.targetRole}</strong>
+                <p className="text-[11px] text-zinc-500 mb-3">
+                  Target: <strong className="text-zinc-300">{activeResume.targetRole}</strong>
                 </p>
 
                 {/* Tab switch */}
-                <div className="grid grid-cols-2 gap-1 bg-slate-900 p-1 rounded-lg mb-4 text-xs">
+                <div className="grid grid-cols-2 gap-1 bg-zinc-950 p-1 rounded-lg mb-3 text-xs">
                   <button
                     type="button"
                     onClick={() => setActiveTab("pdf")}
-                    className={`py-1.5 rounded-md font-medium transition-colors ${
+                    className={`py-1 rounded font-medium text-[11px] transition-colors ${
                       activeTab === "pdf"
-                        ? "bg-indigo-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
                     }`}
                   >
-                    PDF Upload (5MB)
+                    PDF Upload
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("paste")}
-                    className={`py-1.5 rounded-md font-medium transition-colors ${
+                    className={`py-1 rounded font-medium text-[11px] transition-colors ${
                       activeTab === "paste"
-                        ? "bg-indigo-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
                     }`}
                   >
                     Paste Text
@@ -257,14 +252,14 @@ export default function ResumesPage() {
                 </div>
 
                 {uploadError && (
-                  <div className="p-2.5 mb-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                  <div className="p-2 mb-3 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
                     {uploadError}
                   </div>
                 )}
 
                 {uploadSuccess && (
-                  <div className="p-2.5 mb-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <div className="p-2 mb-3 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3" />
                     {uploadSuccess}
                   </div>
                 )}
@@ -276,20 +271,17 @@ export default function ResumesPage() {
                         type="file"
                         accept="application/pdf"
                         onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600/20 file:text-indigo-300 hover:file:bg-indigo-600/30 cursor-pointer"
+                        className="w-full text-xs text-zinc-400 file:mr-2.5 file:py-1.5 file:px-2.5 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-zinc-800 file:text-zinc-300 hover:file:bg-zinc-700 cursor-pointer"
                       />
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        Parsed with backend pdf-parse buffer extractor.
-                      </p>
                     </div>
                   ) : (
                     <div>
                       <textarea
-                        rows={5}
+                        rows={4}
                         value={pastedText}
                         onChange={(e) => setPastedText(e.target.value)}
-                        placeholder="Paste resume content here for scanned or non-standard PDF formats..."
-                        className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                        placeholder="Paste resume content here..."
+                        className="w-full p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 font-mono"
                       />
                     </div>
                   )}
@@ -297,108 +289,92 @@ export default function ResumesPage() {
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all"
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs disabled:opacity-50 transition-colors"
                   >
-                    {uploading ? "Extracting & Storing..." : "Save Next Version"}
+                    {uploading ? "Parsing..." : "Save Version"}
                   </button>
                 </form>
               </div>
             )}
           </div>
 
-          {/* Right Column: Version History & Extracted Text */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Right Column: Version History */}
+          <div className="lg:col-span-2 space-y-3">
             {activeResume ? (
               <>
-                <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                  <span>
-                    Version History for <strong className="text-white">{activeResume.title}</strong>
-                  </span>
+                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 font-medium">
+                  <span>{activeResume.title} Iterations</span>
                   <span>{activeResume.versions.length} Version(s)</span>
                 </div>
 
                 {activeResume.versions.map((ver: any) => (
                   <div
                     key={ver.id}
-                    className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4"
+                    className="p-4 rounded-xl bg-zinc-900/30 border border-white/[0.05] space-y-3"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center font-bold text-sm text-indigo-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-zinc-800 border border-white/[0.04] flex items-center justify-center font-bold text-xs text-amber-400">
                           v{ver.versionNumber}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-sm">
+                            <span className="font-semibold text-xs text-white">
                               Version {ver.versionNumber}
                             </span>
-                            {ver.fileUrl ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                PDF Uploaded
-                              </span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-                                Pasted Text
-                              </span>
-                            )}
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                              {ver.fileUrl ? "PDF" : "Text"}
+                            </span>
                           </div>
-                          <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(ver.createdAt).toLocaleDateString()} at{" "}
-                            {new Date(ver.createdAt).toLocaleTimeString()}
+                          <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                            <Calendar className="w-2.5 h-2.5" />
+                            {new Date(ver.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
 
-                      {/* Action buttons */}
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/ai-lab?resumeVersionId=${ver.id}`}
-                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all"
+                          className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.06] text-xs font-medium flex items-center gap-1.5 transition-colors"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          AI Rubric Review
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          AI Review
                         </Link>
                         <button
                           onClick={() => handleDeleteVersion(ver.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
                           title="Delete Version"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
                     {/* Extracted Text Snippet */}
-                    <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800/80">
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2">
-                        <span className="font-medium text-slate-300">
-                          Extracted Text Layer ({ver.extractedText.length} characters)
-                        </span>
-                        <span>Backend Parsed</span>
+                    <div className="p-3 rounded-lg bg-black/50 border border-white/[0.03]">
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
+                        <span>Extracted Text ({ver.extractedText.length} chars)</span>
                       </div>
-                      <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                      <pre className="text-[11px] text-zinc-400 font-mono whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
                         {ver.extractedText}
                       </pre>
                     </div>
 
                     {/* Latest Review badge if exists */}
                     {ver.reviews && ver.reviews.length > 0 && (
-                      <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/30 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-cyan-400" />
-                          <span className="text-slate-300">
-                            Last AI Evaluation: Score{" "}
-                            <strong className="text-white">
-                              {ver.reviews[0].overallScore}/100
-                            </strong>
-                          </span>
-                        </div>
+                      <div className="p-2.5 rounded-lg bg-zinc-950 border border-amber-400/20 flex items-center justify-between text-xs">
+                        <span className="text-zinc-300 text-[11px]">
+                          AI Evaluation Score:{" "}
+                          <strong className="text-amber-400">
+                            {ver.reviews[0].overallScore}/100
+                          </strong>
+                        </span>
                         <Link
                           href={`/ai-lab?resumeVersionId=${ver.id}`}
-                          className="text-blue-400 hover:text-blue-300 font-semibold"
+                          className="text-amber-400 hover:text-amber-300 text-[11px] font-medium flex items-center gap-1"
                         >
-                          View Breakdown & Rewrites →
+                          View Breakdown <ArrowRight className="w-3 h-3" />
                         </Link>
                       </div>
                     )}
@@ -406,8 +382,8 @@ export default function ResumesPage() {
                 ))}
               </>
             ) : (
-              <div className="p-8 text-center glass-panel rounded-2xl text-slate-400 text-sm">
-                Select or create a target profile to view versions.
+              <div className="p-8 text-center rounded-xl bg-zinc-900/20 text-zinc-500 text-xs">
+                Select a target profile to view versions.
               </div>
             )}
           </div>
@@ -416,38 +392,43 @@ export default function ResumesPage() {
 
       {/* New Profile Modal */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md glass-panel bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-400" />
-              New Target Role Profile
-            </h3>
-            <form onSubmit={handleCreateProfile} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#121214] p-6 rounded-2xl border border-white/[0.08] shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-amber-400" />
+                New Role Profile
+              </h3>
+              <button
+                onClick={() => setIsProfileModalOpen(false)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProfile} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Profile Title
-                </label>
+                <label className="block text-xs text-zinc-400 mb-1">Profile Title</label>
                 <input
                   type="text"
                   value={profileTitle}
                   onChange={(e) => setProfileTitle(e.target.value)}
                   required
                   placeholder="e.g. SDE 1 Campus Resume"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Target Role
-                </label>
+                <label className="block text-xs text-zinc-400 mb-1">Target Role</label>
                 <input
                   type="text"
                   value={profileRole}
                   onChange={(e) => setProfileRole(e.target.value)}
                   required
                   placeholder="e.g. Software Development Engineer"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-white"
                 />
               </div>
 
@@ -455,13 +436,13 @@ export default function ResumesPage() {
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-3.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs"
+                  className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs"
                 >
                   Create Profile
                 </button>

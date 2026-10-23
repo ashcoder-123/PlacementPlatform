@@ -6,6 +6,9 @@ import { GenerateQuestionsRequestSchema } from "@placement/shared";
 
 const router = Router();
 
+// AI Engine Status (Google Gemini / Grounded connectivity)
+router.get("/status", AIController.getStatus);
+
 // Stub endpoint for health check
 router.get("/stub", AIController.stub);
 

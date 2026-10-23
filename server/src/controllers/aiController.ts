@@ -6,12 +6,25 @@ import { JudgeClient } from "../services/judgeClient";
 
 export class AIController {
   /**
-   * AI Stub endpoint for Phase 0 health/smoke checks
+   * Health and status check for AI engine (Google Gemini / Grounded Engine status)
+   */
+  static async getStatus(req: AuthRequest, res: Response) {
+    try {
+      const status = await AIService.getAIStatus();
+      return res.json(status);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * AI Stub endpoint for smoke checks
    */
   static async stub(req: AuthRequest, res: Response) {
+    const status = await AIService.getAIStatus();
     return res.json({
       status: "AI service online",
-      provider: "Hugging Face Inference / Resilient Fallback",
+      ...status,
       supportedFeatures: ["resume_review", "company_question_generator"],
     });
   }
@@ -37,8 +50,15 @@ export class AIController {
         return res.status(404).json({ error: "Resume version not found" });
       }
 
+      // Check active provider
+      const aiStatus = await AIService.getAIStatus();
+
       // Perform AI review
       const reviewResult = await AIService.reviewResume(version.extractedText, jobDescription);
+
+      const modelUsed = aiStatus.geminiConfigured
+        ? `Gemini (${aiStatus.activeModel})`
+        : "Local Grounded Engine";
 
       // Store in database
       const savedReview = await prisma.resumeReview.create({
@@ -51,7 +71,7 @@ export class AIController {
           suggestions: JSON.stringify(reviewResult.suggestions),
           missingKeywords: JSON.stringify(reviewResult.missingKeywords),
           summary: reviewResult.summary,
-          modelUsed: process.env.HUGGINGFACE_MODEL || "mistralai/Mistral-7B-Instruct-v0.2",
+          modelUsed,
         },
       });
 

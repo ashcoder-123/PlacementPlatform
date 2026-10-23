@@ -53,7 +53,7 @@ export class CodingController {
       // Fetch external problems
       let externalProblems: any[] = [];
       if (platform === "codeforces") {
-        externalProblems = await JudgeClient.syncCodeforces(handle);
+        externalProblems = await JudgeClient.syncCodeforces(handle, profile.id);
       } else if (platform === "leetcode") {
         // Delete ALL old LC solved-problem records for this profile before re-syncing.
         // This ensures a user who changes their handle (or re-syncs) always sees
@@ -117,10 +117,15 @@ export class CodingController {
         }
       }
 
+      // Get the real total count after all inserts/updates for an accurate message
+      const totalCount = await prisma.solvedProblem.count({
+        where: { codingProfileId: profile.id },
+      });
+
       return res.json({
-        message: `Successfully synced ${addedCount} problems for ${platform} (${handle})`,
+        message: `Synced ${platform} (${handle}): ${totalCount} problems tracked in total (${addedCount} new)`,
         profile,
-        count: addedCount,
+        count: totalCount,
       });
     } catch (error: any) {
       console.error("Sync profile error:", error);

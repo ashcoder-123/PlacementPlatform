@@ -6,17 +6,15 @@ import { useAuth } from "@/lib/authContext";
 import { api } from "@/lib/api";
 import {
   Sparkles,
-  Briefcase,
+  Building2,
   Code2,
   FileText,
-  BookOpen,
   ArrowRight,
   TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
-  ExternalLink,
-  BarChart3,
+  AlertCircle,
   Layers,
+  ChevronRight,
+  Target,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -98,105 +96,104 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Hero / Demo Flow Overview */}
-      <div className="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-br from-slate-900 via-blue-950/60 to-slate-900 border border-blue-500/20 shadow-2xl">
-        <div className="absolute -right-10 -top-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              Strategic Placement Preparation Engine
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Bridge Your Interview Gap With Data & AI
-            </h1>
-            <p className="mt-2 text-slate-300 text-sm sm:text-base leading-relaxed">
-              We correlate actual company round frequencies with your solved Codeforces/LeetCode submissions to expose your precise weak topics, guide targeted practice, and generate bespoke interview questions.
-            </p>
-          </div>
+      {/* Minimal Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-white/[0.05]">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Placement Overview
+          </h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Real-time readiness telemetry and target company gap analysis
+          </p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <Link
-              href="/companies"
-              className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all"
-            >
-              <Briefcase className="w-4 h-4" />
-              Explore Companies
-            </Link>
-            <Link
-              href="/ai-lab"
-              className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-sm flex items-center justify-center gap-2 transition-all"
-            >
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              Launch AI Lab
-            </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/companies"
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 border border-white/[0.06] transition-colors"
+          >
+            Companies
+          </Link>
+          <Link
+            href="/ai-lab"
+            className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold shadow-sm shadow-amber-500/20 transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Launch AI Lab
+          </Link>
+        </div>
+      </div>
+
+      {/* Minimal KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/[0.06] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-medium tracking-wide uppercase">Companies</span>
+            <Building2 className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="mt-3">
+            <span className="text-2xl font-bold text-white tracking-tight">{stats.totalCompanies}</span>
+            <span className="text-[10px] text-zinc-500 block mt-0.5">Tracked for placement</span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/[0.06] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-medium tracking-wide uppercase">Questions</span>
+            <Layers className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="mt-3">
+            <span className="text-2xl font-bold text-white tracking-tight">{stats.totalQuestions}</span>
+            <span className="text-[10px] text-zinc-500 block mt-0.5">Curated round patterns</span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/[0.06] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-medium tracking-wide uppercase">Coding Sync</span>
+            <Code2 className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="mt-3">
+            <span className="text-2xl font-bold text-white tracking-tight">{stats.codingProfilesCount}</span>
+            <span className="text-[10px] text-zinc-500 block mt-0.5">Active platforms</span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/[0.06] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[11px] font-medium tracking-wide uppercase">Resumes</span>
+            <FileText className="w-4 h-4 text-zinc-400" />
+          </div>
+          <div className="mt-3">
+            <span className="text-2xl font-bold text-white tracking-tight">{stats.resumesCount}</span>
+            <span className="text-[10px] text-zinc-500 block mt-0.5">Parsed versions</span>
           </div>
         </div>
       </div>
 
-      {/* Stats Counter Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-panel p-5 rounded-2xl">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Tracked Companies</span>
-            <Briefcase className="w-4 h-4 text-blue-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{stats.totalCompanies}</div>
-          <p className="text-[11px] text-slate-400 mt-1">Google, Amazon, TCS, MS, Atlassian</p>
-        </div>
-
-        <div className="glass-panel p-5 rounded-2xl">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Interview Questions</span>
-            <Layers className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{stats.totalQuestions}</div>
-          <p className="text-[11px] text-slate-400 mt-1">Categorized by round & verified</p>
-        </div>
-
-        <div className="glass-panel p-5 rounded-2xl">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Coding Sync Profiles</span>
-            <Code2 className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{stats.codingProfilesCount}</div>
-          <p className="text-[11px] text-slate-400 mt-1">Live Codeforces & LeetCode</p>
-        </div>
-
-        <div className="glass-panel p-5 rounded-2xl">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Managed Resumes</span>
-            <FileText className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{stats.resumesCount}</div>
-          <p className="text-[11px] text-slate-400 mt-1">With extracted text versions</p>
-        </div>
-      </div>
-
-      {/* The Core Innovation: Weak-Topic & Company Frequency Correlation Engine */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-800">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-400" />
-              <h2 className="text-lg font-bold text-white">Target Company Weak-Topic Gap Analysis</h2>
+      {/* Target Company Gap Analysis */}
+      <div className="p-6 rounded-2xl bg-zinc-900/30 border border-white/[0.06]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-white/[0.05]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+              <Target className="w-4 h-4" />
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Identifies interview topics that appear frequently for this company but have low solved counts in your coding tracker
-            </p>
+            <div>
+              <h2 className="text-sm font-semibold text-white">Target Company Weakness Radar</h2>
+              <p className="text-[11px] text-zinc-400">Gaps between company interview frequency and your solved track</p>
+            </div>
           </div>
 
-          {/* Company Picker */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-xs font-medium text-slate-400 whitespace-nowrap">Target Company:</label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">Target:</span>
             <select
               value={selectedCompanyId}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-blue-500"
+              className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-amber-500/50"
             >
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.sector})
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -204,115 +201,101 @@ export default function DashboardPage() {
         </div>
 
         {selectedCompany && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Company Profile & Rounds */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6">
+            {/* Left: Selected Company Quick Info */}
+            <div className="p-4 rounded-xl bg-black/40 border border-white/[0.04] flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-base text-white">{selectedCompany.name}</h3>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-white">{selectedCompany.name}</h3>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
                     {selectedCompany.sector}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                <p className="text-xs text-zinc-400 mt-2 line-clamp-3 leading-relaxed">
                   {selectedCompany.description}
                 </p>
 
-                <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Evaluation Rounds
-                </p>
-                <div className="space-y-2">
-                  {selectedCompany.rounds.map((r: any) => (
-                    <div
-                      key={r.id}
-                      className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium text-slate-200 capitalize">
-                        {r.order}. {r.type.replace("_", " ")}
-                      </span>
-                      <span className="text-[11px] text-blue-400 font-semibold">
-                        {r.questionCount} Questions
-                      </span>
-                    </div>
-                  ))}
+                <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 block mb-2">
+                    Interview Rounds
+                  </span>
+                  <div className="space-y-1.5">
+                    {selectedCompany.rounds.map((r: any) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-zinc-900/60 border border-white/[0.03]"
+                      >
+                        <span className="text-zinc-300 capitalize text-[11px]">
+                          {r.type.replace("_", " ")}
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-medium">
+                          {r.questionCount} Qs
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800">
+              <div className="mt-4 pt-3 border-t border-white/[0.04]">
                 <Link
                   href={`/companies?selected=${selectedCompany.id}`}
-                  className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors border border-white/[0.04]"
                 >
-                  View Company Questions
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  View Round Questions <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
 
-            {/* Right: Weak-Topics Ranked List */}
-            <div className="lg:col-span-2 space-y-3">
-              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                <span>Identified Priority Topics for {selectedCompany.name}</span>
-                <span>Gap Score</span>
+            {/* Right: Weak Topics */}
+            <div className="lg:col-span-2 space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 font-medium">
+                <span>Priority Focus Topics</span>
+                <span>Gap Status</span>
               </div>
 
               {weakTopics.length > 0 ? (
-                <div className="space-y-2.5">
-                  {weakTopics.slice(0, 5).map((topic, idx) => (
+                <div className="space-y-2">
+                  {weakTopics.slice(0, 4).map((topic, idx) => (
                     <div
                       key={topic.topicId}
-                      className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/90 hover:border-slate-700 transition-colors"
+                      className="p-3 rounded-xl bg-black/40 border border-white/[0.04] hover:border-white/[0.08] transition-colors"
                     >
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              idx === 0
-                                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                                : idx === 1
-                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                                : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                            }`}
-                          >
+                          <span className="w-4 h-4 rounded text-[10px] font-bold flex items-center justify-center bg-zinc-800 text-zinc-300">
                             {idx + 1}
                           </span>
-                          <span className="font-semibold text-sm text-white">
+                          <span className="font-medium text-xs text-white">
                             {topic.topicName}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-rose-400">
-                            {topic.gapScore > 0 ? `+${topic.gapScore} Gap` : "Balanced"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-1">
-                        <span className="text-[11px] text-slate-400">
-                          {topic.recommendationNote}
+                        <span
+                          className={`text-xs font-semibold ${
+                            topic.gapScore > 0 ? "text-amber-400" : "text-emerald-400"
+                          }`}
+                        >
+                          {topic.gapScore > 0 ? `+${topic.gapScore} Gap` : "Prepared"}
                         </span>
-                        <div className="flex items-center gap-3 text-[11px]">
-                          <span>
-                            Company Asked:{" "}
-                            <strong className="text-slate-200">{topic.companyFrequency}</strong>
-                          </span>
-                          <span>
-                            You Solved:{" "}
-                            <strong className="text-slate-200">{topic.studentSolvedCount}</strong>
-                          </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-1">
+                        <span className="truncate pr-2">{topic.recommendationNote}</span>
+                        <div className="flex items-center gap-2 shrink-0 text-[10px]">
+                          <span>Asked: <strong className="text-zinc-300">{topic.companyFrequency}</strong></span>
+                          <span>Solved: <strong className="text-zinc-300">{topic.studentSolvedCount}</strong></span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-400 text-sm">
-                  <p>Sync your Codeforces/LeetCode handle to see your personalized weak topic radar!</p>
+                <div className="p-8 text-center rounded-xl bg-black/30 border border-dashed border-white/[0.06] text-zinc-400 text-xs">
+                  <p>Sync your Codeforces or LeetCode profile to reveal your weak topics.</p>
                   <Link
                     href="/coding"
-                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-blue-400 hover:text-blue-300"
+                    className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-medium text-amber-400 hover:text-amber-300"
                   >
-                    Sync Profiles Now <ArrowRight className="w-3.5 h-3.5" />
+                    Sync Profiles <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               )}
@@ -321,66 +304,51 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Feature Exploration Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Minimal Feature Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/companies"
-          className="group glass-panel p-6 rounded-2xl hover:border-blue-500/40 transition-all flex flex-col justify-between"
+          className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] hover:border-amber-400/30 transition-all group"
         >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
-              <Briefcase className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors">
-              Company Question Tracker
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-white group-hover:text-amber-400 transition-colors">
+              Company Question Bank
             </h3>
-            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-              Browse questions categorized by company, round, and topic tags. Upvote and mark questions that matched your interview.
-            </p>
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="mt-4 flex items-center text-xs font-semibold text-blue-400 gap-1">
-            Browse Questions <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            Search questions filtered by hiring round, difficulty, and frequency.
+          </p>
         </Link>
 
         <Link
           href="/resumes"
-          className="group glass-panel p-6 rounded-2xl hover:border-indigo-500/40 transition-all flex flex-col justify-between"
+          className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] hover:border-amber-400/30 transition-all group"
         >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 group-hover:scale-110 transition-transform">
-              <FileText className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors">
-              Resume Version Management
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-white group-hover:text-amber-400 transition-colors">
+              Resume Versions
             </h3>
-            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-              Upload PDF resumes with automatic text extraction or use paste fallback. Manage tailored versions for specific target roles.
-            </p>
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="mt-4 flex items-center text-xs font-semibold text-indigo-400 gap-1">
-            Manage Resumes <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            Upload and review multiple resume versions tailored for specific roles.
+          </p>
         </Link>
 
         <Link
           href="/ai-lab"
-          className="group glass-panel p-6 rounded-2xl hover:border-cyan-500/40 transition-all flex flex-col justify-between"
+          className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] hover:border-amber-400/30 transition-all group"
         >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-4 group-hover:scale-110 transition-transform">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
-              AI Review & Question Generator
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-white group-hover:text-amber-400 transition-colors">
+              AI Prep Assistant
             </h3>
-            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-              Audit your resume against rubrics and generate targeted interview questions grounded in company historical data and your weak topics.
-            </p>
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
           </div>
-          <div className="mt-4 flex items-center text-xs font-semibold text-cyan-400 gap-1">
-            Launch AI Engine <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            Resume scoring against company patterns and custom mock questions.
+          </p>
         </Link>
       </div>
     </div>

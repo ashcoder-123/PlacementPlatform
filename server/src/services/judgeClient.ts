@@ -24,16 +24,30 @@ export class JudgeClient {
   /**
    * Syncs solved problems from Codeforces official public API
    */
-  static async syncCodeforces(handle: string): Promise<ExternalProblem[]> {
+  static async syncCodeforces(handle: string, profileId: string): Promise<ExternalProblem[]> {
+    const cleanHandle = handle.trim();
     try {
       const response = await axios.get(
-        `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=100`,
-        { timeout: 10000 }
+        `https://codeforces.com/api/user.status?handle=${encodeURIComponent(cleanHandle)}&from=1&count=1000`,
+        { timeout: 15000 }
       );
 
       if (response.data.status !== "OK") {
         throw new Error(response.data.comment || "Failed to fetch Codeforces data");
       }
+
+      // Delete any CF rows that belong to a DIFFERENT handle on this profile slot.
+      // This happens when a user changes their Codeforces username after a previous sync.
+      await prisma.solvedProblem.deleteMany({
+        where: {
+          codingProfileId: profileId,
+          externalId: {
+            startsWith: "CF-",
+            // Keep only rows whose handle prefix matches the current handle
+            NOT: { startsWith: `CF-${cleanHandle.toLowerCase()}-` },
+          },
+        },
+      });
 
       const submissions = response.data.result;
       const solvedMap = new Map<string, ExternalProblem>();
@@ -41,7 +55,7 @@ export class JudgeClient {
       for (const sub of submissions) {
         if (sub.verdict === "OK" && sub.problem) {
           const prob = sub.problem;
-          const externalId = `CF-${prob.contestId || "0"}${prob.index}`;
+          const externalId = `CF-${cleanHandle.toLowerCase()}-${prob.contestId || "0"}${prob.index}`;
 
           if (!solvedMap.has(externalId)) {
             let difficulty: "easy" | "medium" | "hard" = "medium";
@@ -71,26 +85,17 @@ export class JudgeClient {
 
       return Array.from(solvedMap.values());
     } catch (error: any) {
-      console.error(`Codeforces sync error for handle ${handle}:`, error.message);
-      throw new Error(`Codeforces sync failed: ${error.message}`);
+      console.error(`Codeforces sync error for handle ${cleanHandle}:`, error.message);
+      throw new Error(`Codeforces error: ${error.response?.data?.comment || error.message}`);
     }
   }
 
   /**
-   * Syncs solved problems from LeetCode using tagProblemCounts (per-user cumulative tag stats).
-   * This gives accurate "You Solved X for topic Y" counts rather than just the last 20 submissions,
-   * which fixes the bug where all users appeared to have the same (or similarly low) solved counts.
-   *
-   * Strategy:
-   * 1. Query `tagProblemCounts` — returns actual total problems solved per LeetCode tag for that user.
-   * 2. Map each LeetCode tag → canonical topic slug.
-   * 3. Return synthetic ExternalProblem entries (up to MAX_PER_TAG per canonical topic) so that
-   *    calculateWeakTopics counting `.length` reflects the real solved count reasonably well.
-   *    externalIds use the format `LC-SKILL-{canonicalSlug}-{n}` so they are stable across syncs.
+   * Syncs solved problems from LeetCode using GraphQL tagProblemCounts and submitStatsGlobal fallback.
    */
   static async syncLeetCode(handle: string): Promise<ExternalProblem[]> {
-    // Maximum synthetic problem entries to store per canonical topic (keeps DB rows bounded)
-    const MAX_PER_TAG = 50;
+    const cleanHandle = handle.trim();
+    const MAX_PER_TAG = 500;
 
     try {
       const response = await axios.post(
@@ -104,18 +109,29 @@ export class JudgeClient {
                   intermediate { tagName tagSlug problemsSolved }
                   fundamental  { tagName tagSlug problemsSolved }
                 }
+                submitStats: submitStatsGlobal {
+                  acSubmissionNum {
+                    difficulty
+                    count
+                  }
+                }
+              }
+              recentSubmissionList(username: $username) {
+                title
+                titleSlug
+                statusDisplay
               }
             }
           `,
-          variables: { username: handle },
+          variables: { username: cleanHandle },
         },
         {
           headers: {
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             Referer: "https://leetcode.com",
           },
-          timeout: 12000,
+          timeout: 15000,
         }
       );
 
@@ -124,19 +140,18 @@ export class JudgeClient {
         throw new Error(msg);
       }
 
-      const tagCounts = response.data?.data?.matchedUser?.tagProblemCounts;
-      if (!tagCounts) {
-        throw new Error(`LeetCode user '${handle}' not found or has no tag data`);
+      const matchedUser = response.data?.data?.matchedUser;
+      if (!matchedUser) {
+        throw new Error(`LeetCode account '${cleanHandle}' not found. Please verify username.`);
       }
 
+      const tagCounts = matchedUser.tagProblemCounts;
       const allTags: Array<{ tagName: string; tagSlug: string; problemsSolved: number }> = [
-        ...(tagCounts.advanced || []),
-        ...(tagCounts.intermediate || []),
-        ...(tagCounts.fundamental || []),
+        ...(tagCounts?.advanced || []),
+        ...(tagCounts?.intermediate || []),
+        ...(tagCounts?.fundamental || []),
       ];
 
-      // Aggregate solved counts per canonical topic slug (a user may have multiple LC tags
-      // mapping to the same canonical topic, e.g. "tree" + "binary-tree" both → "trees")
       const canonicalCounts = new Map<string, number>();
       for (const tag of allTags) {
         if (!tag.problemsSolved || tag.problemsSolved <= 0) continue;
@@ -149,9 +164,35 @@ export class JudgeClient {
         );
       }
 
-      // Build synthetic ExternalProblem list
-      // Each canonical topic gets min(actualCount, MAX_PER_TAG) entries so that
-      // the DB record count approximates the real solved count for gap scoring.
+      // If no tag counts were returned, use submitStatsGlobal total count distributed across core topics
+      const acSubmissionNum = matchedUser.submitStats?.acSubmissionNum || [];
+      const totalAc = acSubmissionNum.find((s: any) => s.difficulty === "All")?.count || 0;
+
+      if (canonicalCounts.size === 0 && totalAc > 0) {
+        const defaultTopics = [
+          "arrays-hashing",
+          "two-pointers",
+          "trees",
+          "dynamic-programming",
+          "graphs",
+          "binary-search",
+          "strings",
+          "linked-lists",
+        ];
+        const perTopic = Math.max(1, Math.floor(totalAc / defaultTopics.length));
+        let remaining = totalAc;
+        for (const slug of defaultTopics) {
+          const allocation = Math.min(perTopic, remaining);
+          if (allocation > 0) {
+            canonicalCounts.set(slug, allocation);
+            remaining -= allocation;
+          }
+        }
+        if (remaining > 0 && canonicalCounts.has("arrays-hashing")) {
+          canonicalCounts.set("arrays-hashing", (canonicalCounts.get("arrays-hashing") || 0) + remaining);
+        }
+      }
+
       const problems: ExternalProblem[] = [];
       const now = new Date();
 
@@ -159,9 +200,9 @@ export class JudgeClient {
         const cappedCount = Math.min(count, MAX_PER_TAG);
         for (let i = 0; i < cappedCount; i++) {
           problems.push({
-            externalId: `LC-SKILL-${canonicalSlug}-${i}`,
-            title: `LeetCode [${canonicalSlug}] #${i + 1}`,
-            difficulty: "medium",
+            externalId: `LC-${cleanHandle.toLowerCase()}-${canonicalSlug}-${i}`,
+            title: `LeetCode (${cleanHandle}) [${canonicalSlug}] #${i + 1}`,
+            difficulty: i % 3 === 0 ? "hard" : i % 2 === 0 ? "medium" : "easy",
             link: `https://leetcode.com/tag/${canonicalSlug}/`,
             topicSlugs: [canonicalSlug],
             solvedAt: now,
@@ -171,22 +212,17 @@ export class JudgeClient {
 
       return problems;
     } catch (error: any) {
-      console.warn(`LeetCode sync failed for ${handle}: ${error.message}`);
-      return [];
+      console.warn(`LeetCode sync failed for ${cleanHandle}:`, error.message);
+      throw new Error(`LeetCode error: ${error.message || "Failed to reach LeetCode API"}`);
     }
   }
 
   /**
    * Computes weak topics for a student with respect to a target company.
-   * Algorithm as described in the plan:
-   * Rank topics by how often they appear in that company's tracked questions,
-   * subtract the share the student has already solved, and the largest gaps are the weak topics.
    */
   static async calculateWeakTopics(userId: string, companyId?: string) {
-    // 1. Get all canonical topics
     const allTopics = await prisma.topic.findMany();
 
-    // 2. Count question frequencies for the company (or globally if no company specified)
     const questionWhere = companyId
       ? { round: { companyId } }
       : {};
@@ -202,7 +238,6 @@ export class JudgeClient {
       companyTopicCounts[q.topicId] = (companyTopicCounts[q.topicId] || 0) + 1;
     }
 
-    // 3. Count solved problems by this user per topic
     const studentProfiles = await prisma.codingProfile.findMany({
       where: { userId },
       include: {
@@ -222,19 +257,15 @@ export class JudgeClient {
       }
     }
 
-    // 4. Calculate Gap Score for each topic
     const rankedTopics: RankedTopic[] = allTopics.map((topic: { id: string; name: string }) => {
       const companyCount = companyTopicCounts[topic.id] || 0;
       const studentCount = studentTopicCounts[topic.id] || 0;
 
-      // Frequency in interview rounds (normalized percentage)
       const companyWeight = (companyCount / totalCompanyQuestions) * 100;
-
-      // Student competency factor (normalized percentage of solved problems or threshold)
-      const studentCompetency = Math.min((studentCount / 5) * 100, 100);
-
-      // Gap = High appearance in company, low student solved count
-      const gapScore = Math.max(0, Math.round(companyWeight * 1.5 - studentCompetency * 0.8));
+      // Proportional benchmark: scaled against expected campus interview prep targets
+      const targetThreshold = Math.max(companyCount * 3, 20);
+      const studentCompetency = Math.min((studentCount / targetThreshold) * 100, 100);
+      const gapScore = Math.max(0, Math.round(companyWeight * 1.5 - studentCompetency * 0.7));
 
       let recommendationNote = "Adequate coverage";
       if (companyCount > 0 && studentCount === 0) {
@@ -242,7 +273,7 @@ export class JudgeClient {
       } else if (gapScore > 30) {
         recommendationNote = `High question weight (${companyCount}) with low practice count (${studentCount})`;
       } else if (studentCount > 0) {
-        recommendationNote = `Solved ${studentCount} problems; strengthen with advanced patterns`;
+        recommendationNote = `Solved ${studentCount} problems; reinforce with advanced patterns`;
       }
 
       return {
@@ -255,9 +286,9 @@ export class JudgeClient {
       };
     });
 
-    // Sort descending by gapScore
     rankedTopics.sort((a: RankedTopic, b: RankedTopic) => b.gapScore - a.gapScore || b.companyFrequency - a.companyFrequency);
 
     return rankedTopics;
   }
 }
+

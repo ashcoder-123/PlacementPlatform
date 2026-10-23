@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import { api } from "@/lib/api";
-import { Sparkles, ArrowRight, UserPlus } from "lucide-react";
+import { UserPlus, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,27 +41,27 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-10">
-      <div className="text-center mb-8">
-        <div className="inline-flex p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 mb-4">
-          <UserPlus className="w-8 h-8" />
+    <div className="max-w-sm mx-auto my-10">
+      <div className="text-center mb-6">
+        <div className="inline-flex p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 mb-3">
+          <UserPlus className="w-5 h-5" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Create Student Profile</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Begin your strategic, data-backed placement preparation
+        <h1 className="text-lg font-bold text-white tracking-tight">Create Profile</h1>
+        <p className="text-xs text-zinc-400 mt-0.5">
+          Begin your targeted placement preparation
         </p>
       </div>
 
-      <div className="glass-panel p-6 rounded-2xl shadow-xl">
+      <div className="p-6 rounded-2xl bg-zinc-900/30 border border-white/[0.06] shadow-xl">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
+          <div className="mb-3.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs text-zinc-400 mb-1">
               Full Name
             </label>
             <input
@@ -69,13 +69,13 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-              placeholder="Ashwin Kumar"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 text-xs"
+              placeholder="Candidate Name"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs text-zinc-400 mb-1">
               Campus Email
             </label>
             <input
@@ -83,26 +83,26 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-              placeholder="ashwin@campus.edu"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 text-xs"
+              placeholder="you@campus.edu"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs text-zinc-400 mb-1">
                 Branch / Dept
               </label>
               <input
                 type="text"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-amber-500/50"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Graduation Year
+              <label className="block text-xs text-zinc-400 mb-1">
+                Grad Year
               </label>
               <input
                 type="number"
@@ -110,13 +110,13 @@ export default function RegisterPage() {
                 onChange={(e) => setGraduationYear(Number(e.target.value))}
                 min={2020}
                 max={2035}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-amber-500/50"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs text-zinc-400 mb-1">
               Password
             </label>
             <input
@@ -125,25 +125,25 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-              placeholder="At least 6 characters"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 text-xs"
+              placeholder="Min 6 characters"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-medium text-sm shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+            className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs shadow-sm shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
           >
-            {isLoading ? "Creating Profile..." : "Complete Registration"}
-            <ArrowRight className="w-4 h-4" />
+            {isLoading ? "Creating Profile..." : "Register"}
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Already have an account?{" "}
-          <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold">
-            Sign in here
+        <p className="mt-5 text-center text-xs text-zinc-500">
+          Already registered?{" "}
+          <Link href="/login" className="text-amber-400 hover:text-amber-300 font-medium">
+            Sign in
           </Link>
         </p>
       </div>

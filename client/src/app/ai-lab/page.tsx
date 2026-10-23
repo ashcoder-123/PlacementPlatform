@@ -7,17 +7,14 @@ import { api } from "@/lib/api";
 import {
   Sparkles,
   FileCheck2,
-  Briefcase,
   HelpCircle,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  TrendingUp,
   RotateCw,
-  Copy,
-  Sliders,
-  Send,
   Zap,
+  Cpu,
+  Info,
+  CheckCircle2,
+  AlertCircle,
+  Terminal,
 } from "lucide-react";
 
 function AILabContent() {
@@ -25,6 +22,11 @@ function AILabContent() {
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"resume" | "questions">("resume");
+
+  // AI Engine Status State
+  const [aiStatus, setAiStatus] = useState<any>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [showGeminiHelp, setShowGeminiHelp] = useState(false);
 
   // Tab 1: Resume Review State
   const [resumes, setResumes] = useState<any[]>([]);
@@ -49,10 +51,28 @@ function AILabContent() {
   const [genError, setGenError] = useState("");
 
   useEffect(() => {
+    checkAIStatus();
     if (user) {
       loadInitialData();
     }
   }, [user]);
+
+  const checkAIStatus = async () => {
+    setCheckingStatus(true);
+    try {
+      const res = await api.get("/ai/status");
+      setAiStatus(res.data);
+    } catch {
+      setAiStatus({
+        provider: "grounded_fallback",
+        geminiConfigured: false,
+        activeModel: "Local Grounded Engine",
+        message: "Operating in local grounded mode.",
+      });
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
 
   const loadInitialData = async () => {
     try {
@@ -133,10 +153,10 @@ function AILabContent() {
 
   if (!user) {
     return (
-      <div className="p-12 text-center glass-panel rounded-2xl max-w-lg mx-auto">
-        <Sparkles className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white">Sign In for AI Intelligence</h2>
-        <p className="text-sm text-slate-400 mt-2 mb-6">
+      <div className="p-12 text-center rounded-2xl bg-zinc-900/40 border border-white/[0.06] max-w-md mx-auto my-12">
+        <Sparkles className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+        <h2 className="text-base font-bold text-white">Sign In Required</h2>
+        <p className="text-xs text-zinc-400 mt-1 mb-5">
           Access the grounded question generator and rubric-based resume auditor.
         </p>
       </div>
@@ -152,427 +172,492 @@ function AILabContent() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.05]">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">AI Intelligence Lab</h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Grounded company question synthesis and rubric-aligned resume auditing.
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            AI Prep Assistant
+          </h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Google Gemini Cloud AI & grounded interview question synthesis
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs font-medium">
           <button
             onClick={() => setActiveTab("resume")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
               activeTab === "resume"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                : "text-slate-400 hover:text-white"
+                ? "bg-zinc-800 text-white font-semibold"
+                : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <FileCheck2 className="w-4 h-4" />
-            Resume Rubric Audit
+            <FileCheck2 className="w-3.5 h-3.5 text-amber-400" />
+            Resume Audit
           </button>
           <button
             onClick={() => setActiveTab("questions")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
               activeTab === "questions"
-                ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                : "text-slate-400 hover:text-white"
+                ? "bg-zinc-800 text-white font-semibold"
+                : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <HelpCircle className="w-4 h-4" />
-            Grounded Question Gen
+            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+            Question Generator
           </button>
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* TAB 1: AI RESUME REVIEW                                        */}
-      {/* ============================================================== */}
-      {activeTab === "resume" && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Input Controls */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-blue-400" />
-                Resume & Job Description Setup
-              </h3>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Select Target Resume Version
-                </label>
-                {flattenedVersions.length > 0 ? (
-                  <select
-                    value={selectedVersionId}
-                    onChange={(e) => setSelectedVersionId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-500"
-                  >
-                    {flattenedVersions.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-xs text-rose-400">
-                    No resume versions found. Go to Resume Hub to upload or paste your resume.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Target Job Description (Optional)
-                </label>
-                <textarea
-                  rows={6}
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste target role job description for keyword matching..."
-                  className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {reviewError && (
-                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                  {reviewError}
-                </div>
-              )}
-
-              <button
-                onClick={handleRunResumeReview}
-                disabled={reviewing || flattenedVersions.length === 0}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+      {/* AI Model / Gemini Status Card */}
+      <div className="p-3.5 rounded-xl bg-zinc-900/30 border border-white/[0.05] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-zinc-800 border border-white/[0.04] flex items-center justify-center">
+            <Cpu className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-white">
+                {aiStatus?.geminiConfigured ? "Google Gemini Connected" : "Local Grounded Engine"}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  aiStatus?.geminiConfigured
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-amber-400/10 text-amber-400 border border-amber-400/20"
+                }`}
               >
-                {reviewing ? (
-                  <>
-                    <RotateCw className="w-4 h-4 animate-spin" />
-                    Auditing Rubric & Calculating Overlap...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Run AI Resume Audit
-                  </>
-                )}
-              </button>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    aiStatus?.geminiConfigured ? "bg-emerald-400" : "bg-amber-400"
+                  }`}
+                />
+                {aiStatus?.geminiConfigured
+                  ? `Model: ${aiStatus.activeModel}`
+                  : "Gemini Key Not Set (Fallback Mode)"}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              {aiStatus?.message || "Checking Gemini AI availability..."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowGeminiHelp(!showGeminiHelp)}
+            className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-medium transition-colors"
+          >
+            {showGeminiHelp ? "Hide Guide" : "Gemini Setup"}
+          </button>
+          <button
+            onClick={checkAIStatus}
+            disabled={checkingStatus}
+            className="p-1.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/[0.04] transition-colors"
+            title="Refresh AI Status"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${checkingStatus ? "animate-spin text-amber-400" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Collapsible Gemini Setup Helper */}
+      {showGeminiHelp && (
+        <div className="p-4 rounded-xl bg-black/60 border border-amber-400/20 space-y-2.5 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-white">
+            <Terminal className="w-4 h-4 text-amber-400" />
+            <span>How to configure Google Gemini Cloud AI:</span>
+          </div>
+          <ol className="list-decimal list-inside space-y-1.5 text-zinc-400 text-[11px] leading-relaxed">
+            <li>
+              Generate your free Gemini API key at{" "}
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber-400 underline font-medium"
+              >
+                Google AI Studio (aistudio.google.com)
+              </a>.
+            </li>
+            <li>
+              Open <code className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-200">server/.env</code> and set:{" "}
+              <code className="px-1 py-0.5 rounded bg-zinc-800 text-amber-300">GEMINI_API_KEY=&quot;your_key_here&quot;</code>
+            </li>
+            <li>
+              (Optional) Customize model name in <code className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-200">server/.env</code>:{" "}
+              <code className="px-1 py-0.5 rounded bg-zinc-800 text-amber-300">GEMINI_MODEL=&quot;gemini-1.5-flash&quot;</code> (or <code className="px-1 py-0.5 rounded bg-zinc-800 text-amber-300">gemini-2.5-flash</code>).
+            </li>
+            <li>
+              Click <strong>&quot;Refresh AI Status&quot;</strong> above. Gemini will instantly take over all resume reviews and interview question generation!
+            </li>
+          </ol>
+        </div>
+      )}
+
+      {/* TAB 1: AI RESUME REVIEW */}
+      {activeTab === "resume" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Input Controls */}
+          <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] space-y-4">
+            <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+              <FileCheck2 className="w-3.5 h-3.5 text-amber-400" />
+              Audit Configuration
+            </h3>
+
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Target Resume Version
+              </label>
+              {flattenedVersions.length > 0 ? (
+                <select
+                  value={selectedVersionId}
+                  onChange={(e) => setSelectedVersionId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                >
+                  {flattenedVersions.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-xs text-red-400">
+                  No resume versions found. Go to Resume Hub to upload one.
+                </p>
+              )}
             </div>
 
-            {/* Results Presentation */}
-            <div className="lg:col-span-2 space-y-4">
-              {reviewResult ? (
-                <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-6">
-                  {/* Overall Scores */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <div className="text-3xl font-extrabold text-blue-400">
-                        {reviewResult.overallScore}
-                        <span className="text-sm font-normal text-slate-400">/100</span>
-                      </div>
-                      <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mt-1">
-                        Overall Score
-                      </div>
-                    </div>
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Target Job Description
+              </label>
+              <textarea
+                rows={5}
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste job description keywords..."
+                className="w-full p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
 
-                    <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <div className="text-3xl font-extrabold text-indigo-400">
-                        {reviewResult.keywordOverlapScore}%
-                      </div>
-                      <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mt-1">
-                        Keyword Overlap
-                      </div>
-                    </div>
+            {reviewError && (
+              <div className="p-2.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {reviewError}
+              </div>
+            )}
 
-                    <div className="col-span-2 sm:col-span-1 p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col justify-center">
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                        Model Engine
-                      </span>
-                      <span className="text-xs font-bold text-slate-200 truncate mt-0.5">
-                        {reviewResult.modelUsed || "Instruction-Tuned AI"}
-                      </span>
-                      <span className="text-[10px] text-emerald-400 mt-1">✓ Zod Validated</span>
+            <button
+              onClick={handleRunResumeReview}
+              disabled={reviewing || flattenedVersions.length === 0}
+              className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs shadow-sm shadow-amber-500/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+            >
+              {reviewing ? (
+                <>
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                  Auditing Resume...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Run AI Audit
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Results Presentation */}
+          <div className="lg:col-span-2 space-y-4">
+            {reviewResult ? (
+              <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] space-y-5">
+                {/* Overall Scores */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-lg bg-black/40 border border-white/[0.04] text-center">
+                    <div className="text-2xl font-bold text-amber-400">
+                      {reviewResult.overallScore}
+                      <span className="text-xs font-normal text-zinc-500">/100</span>
+                    </div>
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                      Overall Score
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <div className="p-4 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs text-slate-300 leading-relaxed">
-                    <p className="font-semibold text-white mb-1">Executive Assessment:</p>
-                    {reviewResult.summary}
+                  <div className="p-3.5 rounded-lg bg-black/40 border border-white/[0.04] text-center">
+                    <div className="text-2xl font-bold text-emerald-400">
+                      {reviewResult.keywordOverlapScore}%
+                    </div>
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                      Keyword Overlap
+                    </div>
                   </div>
 
-                  {/* Section Scores */}
+                  <div className="col-span-2 sm:col-span-1 p-3.5 rounded-lg bg-black/40 border border-white/[0.04] flex flex-col justify-center text-center sm:text-left">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                      Engine
+                    </span>
+                    <span className="text-xs font-semibold text-zinc-300 truncate mt-0.5">
+                      {reviewResult.modelUsed || (aiStatus?.geminiConfigured ? `Gemini (${aiStatus.activeModel})` : "Local Engine")}
+                    </span>
+                    <span className="text-[10px] text-emerald-400 mt-0.5">✓ Zod Validated</span>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="p-3.5 rounded-lg bg-zinc-950 border border-white/[0.04] text-xs text-zinc-300 leading-relaxed">
+                  <p className="font-semibold text-white mb-1">Assessment:</p>
+                  {reviewResult.summary}
+                </div>
+
+                {/* Section Scores */}
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2.5">
+                    Rubric Breakdown
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {reviewResult.sectionScores?.map((sec: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-lg bg-black/30 border border-white/[0.04]"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-xs text-white">
+                            {sec.sectionName}
+                          </span>
+                          <span className="text-xs font-bold text-amber-400">
+                            {sec.score}/100
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          {sec.feedback}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bullet Rewrites */}
+                {reviewResult.suggestions?.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                      Rubric Criteria Breakdown
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2.5">
+                      Weakest Bullets & Recommended Rewrites (Google XYZ Formula)
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {reviewResult.sectionScores?.map((sec: any, idx: number) => (
+                    <div className="space-y-2.5">
+                      {reviewResult.suggestions.map((sug: any, idx: number) => (
                         <div
                           key={idx}
-                          className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80"
+                          className="p-3 rounded-lg bg-black/30 border border-white/[0.04] space-y-1.5 text-xs"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-bold text-xs text-white">
-                              {sec.sectionName}
+                          <div className="p-2 rounded bg-red-950/20 border border-red-500/20 text-red-300 text-[11px]">
+                            <span className="font-semibold text-red-400 block mb-0.5">
+                              Current Bullet:
                             </span>
-                            <span className="text-xs font-extrabold text-blue-400">
-                              {sec.score}/100
-                            </span>
+                            &ldquo;{sug.original}&rdquo;
                           </div>
-                          <p className="text-[11px] text-slate-400 leading-relaxed">
-                            {sec.feedback}
+
+                          <div className="p-2 rounded bg-emerald-950/20 border border-emerald-500/20 text-emerald-300 text-[11px]">
+                            <span className="font-semibold text-emerald-400 block mb-0.5">
+                              Quantified XYZ Rewrite:
+                            </span>
+                            &ldquo;{sug.suggested}&rdquo;
+                          </div>
+
+                          <p className="text-[10px] text-zinc-500 italic">
+                            Rationale: {sug.reason}
                           </p>
                         </div>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  {/* Bullet Rewrites using XYZ Formula */}
-                  {reviewResult.suggestions?.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                        Weakest Bullets & Recommended Rewrites (Google XYZ Formula)
-                      </h4>
-                      <div className="space-y-3">
-                        {reviewResult.suggestions.map((sug: any, idx: number) => (
-                          <div
-                            key={idx}
-                            className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs"
-                          >
-                            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
-                              <span className="font-semibold text-rose-400 block mb-0.5">
-                                Before (Weak Bullet):
-                              </span>
-                              &ldquo;{sug.original}&rdquo;
-                            </div>
-
-                            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
-                              <span className="font-semibold text-emerald-400 block mb-0.5">
-                                After (Quantified XYZ Impact):
-                              </span>
-                              &ldquo;{sug.suggested}&rdquo;
-                            </div>
-
-                            <p className="text-[11px] text-slate-400 italic">
-                              Rationale: {sug.reason}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
+                {/* Missing Keywords */}
+                {reviewResult.missingKeywords?.length > 0 && (
+                  <div>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                      Missing ATS Keywords
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {reviewResult.missingKeywords.map((kw: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-medium"
+                        >
+                          + {kw}
+                        </span>
+                      ))}
                     </div>
-                  )}
-
-                  {/* Missing Keywords */}
-                  {reviewResult.missingKeywords?.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                        Missing ATS Keywords
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {reviewResult.missingKeywords.map((kw: string, idx: number) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-rose-300 border border-rose-500/30 font-medium"
-                          >
-                            + {kw}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-12 text-center rounded-2xl glass-panel text-slate-400 text-sm">
-                  <FileCheck2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                  <p>Select a resume version and click &quot;Run AI Resume Audit&quot; to evaluate metrics, clarity, and ATS keyword overlap.</p>
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-10 text-center rounded-xl bg-zinc-900/20 border border-dashed border-white/[0.06] text-zinc-500 text-xs">
+                Select a resume version and click &quot;Run AI Audit&quot; to review clarity, impact, and keyword overlap.
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* TAB 2: GROUNDED QUESTION GENERATOR                             */}
-      {/* ============================================================== */}
+      {/* TAB 2: GROUNDED QUESTION GENERATOR */}
       {activeTab === "questions" && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Input Controls */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-cyan-400" />
-                Grounded Question Synthesis
-              </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Input Controls */}
+          <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] space-y-4">
+            <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+              Target Context
+            </h3>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Target Company
-                </label>
-                <select
-                  value={genCompanyId}
-                  onChange={(e) => setGenCompanyId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500"
-                >
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.sector})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Target Role
-                </label>
-                <input
-                  type="text"
-                  value={genRole}
-                  onChange={(e) => setGenRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
-                  placeholder="Software Development Engineer"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="includeWeak"
-                  checked={includeWeakTopics}
-                  onChange={(e) => setIncludeWeakTopics(e.target.checked)}
-                  className="rounded bg-slate-900 border-slate-700 text-cyan-600 focus:ring-0"
-                />
-                <label htmlFor="includeWeak" className="text-xs text-slate-300 font-medium">
-                  Incorporate my identified weak topics
-                </label>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-                  <span>Number of Questions</span>
-                  <span className="font-bold text-white">{genCount}</span>
-                </div>
-                <input
-                  type="range"
-                  min={3}
-                  max={6}
-                  value={genCount}
-                  onChange={(e) => setGenCount(Number(e.target.value))}
-                  className="w-full accent-cyan-500 cursor-pointer"
-                />
-              </div>
-
-              {genError && (
-                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                  {genError}
-                </div>
-              )}
-
-              <button
-                onClick={handleGenerateQuestions}
-                disabled={generating}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">Target Company</label>
+              <select
+                value={genCompanyId}
+                onChange={(e) => setGenCompanyId(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-amber-500/50"
               >
-                {generating ? (
-                  <>
-                    <RotateCw className="w-4 h-4 animate-spin" />
-                    Querying Patterns & Synthesizing...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    Generate Grounded Questions
-                  </>
-                )}
-              </button>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.sector})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Generated Question Output Cards */}
-            <div className="lg:col-span-2 space-y-4">
-              {questionSetResult ? (
-                <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-base text-white">
-                        {questionSetResult.companyName} — {questionSetResult.targetRole}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {questionSetResult.notes}
-                      </p>
-                    </div>
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">Target Role</label>
+              <input
+                type="text"
+                value={genRole}
+                onChange={(e) => setGenRole(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white"
+                placeholder="Software Development Engineer"
+              />
+            </div>
 
-                    <span className="text-xs px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold">
-                      {questionSetResult.isCompanySpecific
-                        ? "Company Grounded"
-                        : "General Practice"}
-                    </span>
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="includeWeak"
+                checked={includeWeakTopics}
+                onChange={(e) => setIncludeWeakTopics(e.target.checked)}
+                className="rounded bg-zinc-950 border-zinc-800 text-amber-500 focus:ring-0"
+              />
+              <label htmlFor="includeWeak" className="text-xs text-zinc-300">
+                Incorporate my identified weak topics
+              </label>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                <span>Number of Questions</span>
+                <span className="font-semibold text-white">{genCount}</span>
+              </div>
+              <input
+                type="range"
+                min={3}
+                max={6}
+                value={genCount}
+                onChange={(e) => setGenCount(Number(e.target.value))}
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+            </div>
+
+            {genError && (
+              <div className="p-2.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {genError}
+              </div>
+            )}
+
+            <button
+              onClick={handleGenerateQuestions}
+              disabled={generating}
+              className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs shadow-sm shadow-amber-500/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+            >
+              {generating ? (
+                <>
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                  Generating Questions...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3.5 h-3.5" />
+                  Generate Questions
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Generated Question Output Cards */}
+          <div className="lg:col-span-2 space-y-4">
+            {questionSetResult ? (
+              <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/[0.05] space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-sm text-white">
+                      {questionSetResult.companyName} — {questionSetResult.targetRole}
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {questionSetResult.notes}
+                    </p>
                   </div>
 
-                  <div className="space-y-3.5 pt-2">
-                    {questionSetResult.questions?.map((q: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            Q{idx + 1}.
-                          </span>
-                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 capitalize">
-                            {q.roundType.replace("_", " ")} Round
-                          </span>
-                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-semibold">
-                            {q.topicName}
-                          </span>
-                          <span
-                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                              q.difficulty === "easy"
-                                ? "bg-emerald-500/10 text-emerald-400"
-                                : q.difficulty === "hard"
-                                ? "bg-rose-500/10 text-rose-400"
-                                : "bg-amber-500/10 text-amber-400"
-                            }`}
-                          >
-                            {q.difficulty}
-                          </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20 font-medium">
+                    {questionSetResult.isCompanySpecific ? "Company Grounded" : "Practice Mode"}
+                  </span>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  {questionSetResult.questions?.map((q: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-lg bg-black/40 border border-white/[0.04] space-y-2"
+                    >
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-bold text-zinc-400">Q{idx + 1}.</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 capitalize">
+                          {q.roundType.replace("_", " ")} Round
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-amber-400 font-medium">
+                          {q.topicName}
+                        </span>
+                        <span
+                          className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                            q.difficulty === "easy"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : q.difficulty === "hard"
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-amber-500/10 text-amber-400"
+                          }`}
+                        >
+                          {q.difficulty}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                        {q.questionText}
+                      </p>
+
+                      <div className="p-2.5 rounded bg-zinc-950 border border-white/[0.03] space-y-1 text-[11px] text-zinc-400">
+                        <div>
+                          <strong className="text-zinc-300">Expected Approach: </strong>
+                          {q.expectedAnswerApproach}
                         </div>
-
-                        <p className="text-sm text-slate-200 leading-relaxed font-medium">
-                          {q.questionText}
-                        </p>
-
-                        <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700/60 space-y-1.5 text-xs text-slate-300">
-                          <div>
-                            <strong className="text-cyan-400">Approach & Key Patterns: </strong>
-                            {q.expectedAnswerApproach}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            <strong>Why Selected: </strong>
-                            {q.rationale}
-                          </div>
+                        <div className="text-[10px] text-zinc-500">
+                          <strong>Rationale: </strong>
+                          {q.rationale}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="p-12 text-center rounded-2xl glass-panel text-slate-400 text-sm">
-                  <HelpCircle className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                  <p>Choose your target company and role, then generate questions grounded in historical round patterns and your weak topics.</p>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="p-10 text-center rounded-xl bg-zinc-900/20 border border-dashed border-white/[0.06] text-zinc-500 text-xs">
+                Select your target company and role, then generate grounded practice questions tailored to your weak topics.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -582,7 +667,7 @@ function AILabContent() {
 
 export default function AILabPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">Loading AI Lab...</div>}>
+    <React.Suspense fallback={<div className="p-8 text-center text-zinc-500 text-xs">Loading AI Lab...</div>}>
       <AILabContent />
     </React.Suspense>
   );
